@@ -1,11 +1,15 @@
 import torch
 from bertkit_tokenizer import tokenization # the amended Google tokenizer
-from typing import Dict, Union
+from typing import Dict, Tuple, Union
+
+# for a proper mypy check do 
+# pip install types-six, otherwise you may get a mypy error fron the tokenization module
+# where six is used.
 
 
 class BertKitTokenizer():
     
-    def __init__(self, vocab_file:str=None):
+    def __init__(self, vocab_file:Union[str, None]=None):
         
         if vocab_file is None:
             raise ValueError("Please provide path to vocab.txt!")
@@ -28,7 +32,7 @@ class BertKitTokenizer():
         return id_list
     
     
-    def pad_sequences(self, sequences:list[list[int]], pad_value=0) -> list[list[str]]:
+    def pad_sequences(self, sequences:list[list[int]], pad_value=0) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
         Pad sequences to the length of the longest sequence.
         Generate corresponding token_type_id lists (all zero).
@@ -36,8 +40,9 @@ class BertKitTokenizer():
         Returns:
             List of lists where all sublists have the same length
         """
-        if not sequences:
-            return sequences
+        # sanity checks:
+        assert sequences is not None
+        assert sequences[0] is not None
 
         # Find the maximum length
         max_length = max(len(seq) for seq in sequences)
@@ -86,10 +91,13 @@ class BertKitTokenizer():
 
         #
         # Now we have a list of lists of tokens. 
-        # They are now converted to ids
+        # They are now converted to ids.
+        # In case of an empty string the tokenlist at least contains
+        # the CLS and SEP token.
         #
-        #print(tokenlist)
+
         input_ids = self.convert_tokenlist(tokenlist)
+        assert  input_ids is not None
         
         padded_sequences, token_type_ids, attention_mask = self.pad_sequences(
             input_ids,
